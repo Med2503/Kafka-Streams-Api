@@ -1,30 +1,104 @@
+# 🏦 Kafka Streams - Bank Transactions Processor
 
-Our Application is a bank that holds its customer's bank balances in a Kafka Streams application. We are going to develop a topology that will process bank transactions 
-and will stream updates of every new balance for a given user.
-The application will also stream all the rejected transactions into a different topic for error handling purposes.
+A real-time **stream processing application** using **Kafka Streams** to manage bank balances and handle rejected transactions efficiently.
 
-Bank Transaction
-The BankTransaction will hold the data regarding the transactions that will be processed. It will hold an amount that can be either positive or negative, representing credits or debits, respectively.
+---
 
-Bank Balance
-The BankBalance class will store the account balance for the user, and it will also hold information about the latest transaction.
+## 📌 Overview
+
+This application processes **bank transactions** in real-time, maintains **customer balances** in a **stateful Kafka Streams topology**, and handles **rejected transactions** by routing them to a separate topic for error handling.
+
+The system uses:
+
+- **Kafka Topics** for input and output streams
+- **Kafka Streams DSL** for stateful stream processing
+- **Docker Compose** for setting up Kafka infrastructure
+
+---
+
+## 🧩 Key Concepts
+
+### 🧾 BankTransaction
+
+Represents a customer's transaction:
+
+- `amount`: positive (credit) or negative (debit)
+- Other transaction metadata (timestamp, ID, etc.)
+
+### 💰 BankBalance
+
+Represents a customer's current account state:
+
+- Current balance
+- Metadata from the most recent transaction
+
+---
+
+## 🔁 Kafka Streams Topology
+
+The processing logic performs the following:
+
+1. **Read from `bank-transactions` topic**  
+   → `key = balanceId`
+
+2. **Group by key**  
+   → Using `groupByKey()` to organize transactions per user
+
+3. **Aggregate transactions into balances**  
+   → `aggregate()` transactions per user into a `BankBalance`  
+   → Store results in a **State Store**
+
+4. **Convert KTable to KStream**  
+   → Emits every balance update as a stream
+
+5. **Write updated balances to `bank-balances` topic**
+
+6. **Extract last transaction from balance and map it to a BankTransaction**
+
+7. **Filter REJECTED transactions**
+
+8. **Write rejected ones to `rejected-transactions` topic**
+
+---
+
+## 🛠️ Technologies Used
+
+- **Java 17**
+- **Spring Boot**
+- **Apache Kafka**
+- **Kafka Streams**
+- **Docker Compose**
+- **Lombok (optional)**
 
 
-In the topology, we are going to:
+## 🚀 Running the Project
 
-1- Stream the topic bank-transactions where the key is the balanceId
-2- groupByKey the stream
-3- Use the aggregate operation to aggregate the all the transactions that have the same key into a single account balance. The balances will be stored in a State Store. This operation will return a KTable
-4- Transform the KTable into a KStream. This means that any change occurring in the table will be streamed as an event
-Stream the events into the bank-balances topic
-5- map the BankBalance into BankTransaction by keeping the last transaction
-6- filter the transactions to keep only the REJECTED transactions
-7- stream the rejected transactions into the rejected-transactions topic
+### 1. Start Kafka Infrastructure
 
+This project includes a pre-configured `docker-compose.yml` file to launch Kafka and Zookeeper, and a script to create required topics.
 
-Running the project
-Starting Kafka
-First, we need to start Kafka. For that we have a docker-compose.yml file that will create the necessary resources for us. It will start a Zookeeper instance and a Kafka broker. It will also create the necessary topics using the script found in the create-topics.sh file.
-
+```bash
 docker compose -f ./docker-compose.yml up
+
+
+Project Structure
+
+kafka-streams-bank-processor/
+├── src/
+│   ├── model/              # BankTransaction & BankBalance classes
+│   ├── topology/           # Kafka Streams topology builder
+│   └── config/             # Kafka configuration
+├── docker-compose.yml
+├── create-topics.sh
+└── README.md
+
+
+📊 Topics Used
+Topic Name	Purpose
+bank-transactions	Input stream of all bank transactions
+bank-balances	Output stream of updated balances
+rejected-transactions	Output stream of rejected operations
+
+
+
 
